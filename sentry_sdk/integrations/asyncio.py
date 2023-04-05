@@ -36,12 +36,11 @@ def patch_asyncio():
                 hub = Hub(Hub.current)
                 result = None
 
-                with hub:
-                    with hub.start_span(op=OP.FUNCTION, description=coro.__qualname__):
-                        try:
-                            result = await coro
-                        except Exception:
-                            reraise(*_capture_exception(hub))
+                with hub.start_span(op=OP.FUNCTION, description=coro.__qualname__):
+                    try:
+                        result = await coro
+                    except Exception as e:
+                        reraise(*_capture_exception(e))
 
                 return result
 
@@ -68,23 +67,19 @@ def patch_asyncio():
         pass
 
 
-def _capture_exception(hub):
-    # type: (Hub) -> ExcInfo
-    exc_info = sys.exc_info()
+def _capture_exception(exception, handled=False):
+    # type: (BaseException, **Any) -> None
+    hub = Hub.current
+    if hub.get_integration(AsyncioIntegration) is None:
+        return
 
-    integration = hub.get_integration(AsyncioIntegration)
-    if integration is not None:
-        # If an integration is there, a client has to be there.
-        client = hub.client  # type: Any
+    event, hint = event_from_exception(
+        exception,
+        client_options=hub.client.options if hub.client else None,
+        mechanism={"type": AsyncioIntegration.identifier, "handled": handled},
+    )
 
-        event, hint = event_from_exception(
-            exc_info,
-            client_options=client.options,
-            mechanism={"type": "alex-asyncio", "handled": False},
-        )
-        hub.capture_event(event, hint=hint)
-
-    return exc_info
+    hub.capture_event(event, hint=hint)
 
 
 class AsyncioIntegration(Integration):
