@@ -80,7 +80,7 @@ def _capture_exception(hub):
         event, hint = event_from_exception(
             exc_info,
             client_options=client.options,
-            mechanism={"type": "asyncio", "handled": False},
+            mechanism={"type": "alex-asyncio", "handled": False},
         )
         hub.capture_event(event, hint=hint)
 
