@@ -88,7 +88,7 @@ def _capture_exception(hub):
 
 
 class AsyncioIntegration(Integration):
-    identifier = "asyncio"
+    identifier = "alex-asyncio"
 
     @staticmethod
     def setup_once():
